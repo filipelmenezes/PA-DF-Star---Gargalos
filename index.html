@@ -337,16 +337,28 @@ function App(){
     return Array.from(seen.values());
   })();
   const resolvidos=gargs.filter(g=>g.resolvido);
-  // For PA1 box10+internados: count as single item
-  const pa1HasCombCrit=ativosDedup.some(g=>g.tipo==="internados_bloqueando"&&g.setor==="PA 1"&&g.box10&&(g.internados||0)>=10);
-  const pa1HasBox10Crit=ativosDedup.some(g=>g.tipo==="box10"&&g.setor==="PA 1"&&g.box10Status==="ocupada_internado");
-  const pa1DoubleCrit=pa1HasCombCrit&&pa1HasBox10Crit?1:0;
-  // Exclude PA1 box10 from general counts — handled separately in widget
-  const ativosForCount=ativosDedup.filter(g=>!(g.tipo==="box10"&&g.setor==="PA 1"));
-  const nCrit=ativosForCount.filter(g=>efGrav(g)==="critico").length - pa1DoubleCrit
-    + (pa1HasBox10Crit||pa1HasCombCrit?1:0);
-  const nMod=ativosForCount.filter(g=>efGrav(g)==="moderado").length
-    + (ativosDedup.some(g=>g.tipo==="box10"&&g.setor==="PA 1"&&g.box10Status==="ocupada_pa")?1:0);
+  // PA1 box10: find the single most recent PA1 "emergency situation" entry
+  // Could be: standalone box10 registro OR internados with box10 toggle
+  const latestPA1Box10=ativosDedup.find(g=>g.tipo==="box10"&&g.setor==="PA 1");
+  const latestPA1Int=ativosDedup.find(g=>g.tipo==="internados_bloqueando"&&g.setor==="PA 1");
+  // Determine PA1 emergency status from MOST RECENT of the two
+  const pa1EmergTS=Math.max(latestPA1Box10?.timestamp||0, latestPA1Int?.timestamp||0);
+  const pa1EmergSource=pa1EmergTS===(latestPA1Box10?.timestamp||0)&&latestPA1Box10?latestPA1Box10:latestPA1Int;
+  const pa1EmergStatus=(()=>{
+    if(!pa1EmergSource)return"none";
+    if(pa1EmergSource.tipo==="box10")return pa1EmergSource.box10Status||"none";
+    if(pa1EmergSource.box10&&(pa1EmergSource.internados||0)>=10)return"ocupada_internado";
+    return"none";
+  })();
+  const pa1IsCrit=pa1EmergStatus==="ocupada_internado";
+  const pa1IsMod=pa1EmergStatus==="ocupada_pa";
+  // Exclude ALL PA1 box10-related entries from general counts — count as 1 below
+  const ativosForCount=ativosDedup.filter(g=>
+    !(g.tipo==="box10"&&g.setor==="PA 1")&&
+    !(g.tipo==="internados_bloqueando"&&g.setor==="PA 1"&&g.box10)
+  );
+  const nCrit=ativosForCount.filter(g=>efGrav(g)==="critico").length+(pa1IsCrit?1:0);
+  const nMod=ativosForCount.filter(g=>efGrav(g)==="moderado").length+(pa1IsMod?1:0);
   const nInt=ativosDedup.filter(g=>g.tipo==="internados_bloqueando").reduce((s,g)=>s+(g.internados||0),0);
   const tcAtivo=ativosDedup.filter(g=>g.setor==="Tomografia"&&(g.tcFila||0)>0).sort((a,b)=>b.timestamp-a.timestamp);
   const tcMax=tcAtivo.length>0?tcAtivo[0].tcFila:0;
@@ -568,9 +580,9 @@ function App(){
           {(()=>{
             // ── Build widgets ─────────────────────────────────────────
             // Check if PA1 has a combined internados+box10 critical situation
-            const pa1CombCrit=intAtivoPA1[0]?.box10&&intMaxPA1>=10;
+            const pa1CombCrit=(intAtivoPA1[0]?.box10&&intMaxPA1>=10)||pa1IsCrit;
             // Check for standalone box10 registration (tipo==="box10")
-            const b10Reg=ativosDedup.filter(g=>g.tipo==="box10"&&g.setor==="PA 1"&&g.box10Status&&g.box10Status!=="disponivel").sort((a,b)=>b.timestamp-a.timestamp)[0];
+            const b10Reg=latestPA1Box10&&latestPA1Box10.box10Status&&latestPA1Box10.box10Status!=="disponivel"?latestPA1Box10:null;
 
             // PA1 internados widget — merge with box10 info if applicable
             const pa1Widget=(()=>{
