@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="PA DF Star"/>
+<meta name="theme-color" content="#06080f"/>
+<title>Monitor de Gargalos — PA DF Star</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const FB = {
+  apiKey: "AIzaSyApR3SJoY2lta7ijTS1rcx_g2NrJrv3KTU",
+  authDomain: "pa-df-star.firebaseapp.com",
+  projectId: "pa-df-star",
+  storageBucket: "pa-df-star.firebasestorage.app",
+  messagingSenderId: "79784726023",
+  appId: "1:79784726023:web:3d4b8b768b923ad22424a2"
+};
+const app = initializeApp(FB);
+const db = getFirestore(app);
+window.__db = db;
+window.__fb = { collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy };
+window.dispatchEvent(new Event("fb-ready"));
+</script>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#06080f;--sf:#0d1120;--sf2:#131a2e;--bd:#1c2a45;--gold:#c9a84c;--gold2:#e8c97a;--tx:#e8eaf0;--tx2:#8a96b0;--gr:#22c55e;--yw:#f59e0b;--rd:#ef4444;--r:12px;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden;width:100%;}
+#app{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.loading{color:var(--gold);font-size:16px;font-family:'JetBrains Mono';}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">Carregando DF Star...</div></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const LOGO = "data:image/png;base64,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";
+const SETORES = ["PA 1","PA 2","Tomografia","Laboratório","Medicação","Triagem","Observação"];
+const TIPOS = [
+  {id:"equipamento",label:"Equipamento indisponível",icon:"⚙️"},
+  {id:"falta_pessoal",label:"Falta de pessoal",icon:"👤"},
+  {id:"internados_bloqueando",label:"Internados aguardando leito",icon:"🛏️"},
+  {id:"material",label:"Falta de material/insumo",icon:"📦"},
+  {id:"outro",label:"Outro",icon:"⚠️"},
+];
+const STATUS_BOX10 = [
+  {id:"disponivel",label:"Disponível",icon:"✅",color:"#22c55e",desc:"Sala de emergência livre"},
+  {id:"ocupada_pa",label:"Ocupada — atendimento PA",icon:"🟡",color:"#f59e0b",desc:"Paciente de porta no Box 10"},
+  {id:"ocupada_internado",label:"Ocupada — internado aguardando leito",icon:"🚨",color:"#ef4444",desc:"Sem retaguarda de emergência"},
+];
+const GRAVS = [{id:"leve",label:"Leve",color:"#22c55e"},{id:"moderado",label:"Moderado",color:"#f59e0b"},{id:"critico",label:"Crítico",color:"#ef4444"}];
+const USUARIOS = ["Coordenador Médico","Supervisor Médico PA 1","Supervisor Médico PA 2","Médico Plantonista","Enfermeiro(a) Supervisor(a)","Enfermeiro(a) Rotineiro(a)","Enfermeiro(a) Navegador(a)","Enfermeiro(a) Plantonista","Técnico de Enfermagem","Concierge / Relacionamento"];
+const ST_TC = [{id:"normal",label:"Operação normal",icon:"✅",color:"#22c55e",desc:"Ambos tomógrafos operando",grav:"leve"},{id:"somente_um",label:"Somente 1 operante",icon:"⚠️",color:"#f59e0b",desc:"Um tomógrafo em uso",grav:"moderado"},{id:"indisponivel",label:"Indisponível",icon:"🚫",color:"#ef4444",desc:"Sem tomógrafo disponível",grav:"critico"}];
+const ST_MED = [{id:"normal",label:"Operação normal",icon:"✅",color:"#22c55e",desc:"Medicações em dia",grav:"leve"},{id:"atrasado",label:"Com atraso",icon:"⏳",color:"#f59e0b",desc:"Pacientes aguardando além do prazo",grav:"moderado"}];
+const MOT_MED = [{id:"sem_posicao",label:"Sem posição para medicar",icon:"🛑"},{id:"falta_tecnico",label:"Falta de técnico de enfermagem",icon:"👤"},{id:"atraso_farmacia",label:"Atraso na vinda da farmácia",icon:"🏥"},{id:"ausente_dispensario",label:"Medicamento ausente no dispensário",icon:"💊"}];
+const ST_TRI = [{id:"normal",label:"Triagem normal",icon:"✅",color:"#22c55e",desc:"Fluxo adequado",grav:"leve"},{id:"fila",label:"Fila de espera",icon:"⏳",color:"#f59e0b",desc:"Pacientes aguardando triagem",grav:"moderado"}];
+const BOXES_PA1 = Array.from({length:11},(_,i)=>"Box "+(i+1));
+const BOXES_PA2 = Array.from({length:12},(_,i)=>"Box "+(i+1));
+const CAT_PAC = [{id:"critico_uti",label:"Crítico / UTI",icon:"🚨",color:"#ef4444",desc:"Prioritário — solicitar leito de UTI"},{id:"recomendado",label:"Recomendado",icon:"⭐",color:"#c9a84c",desc:"Concierge / Família VIP"}];
+
+function uid(){return Math.random().toString(36).substr(2,9);}
+function fmtH(ts){return new Date(ts).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});}
+function fmtDH(ts){return new Date(ts).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});}
+function tdec(ts){const d=Math.floor((Date.now()-ts)/60000);if(d<1)return"agora";if(d<60)return d+"min";return Math.floor(d/60)+"h"+d%60+"min";}
+function tdur(a,b){const d=Math.floor((b-a)/60000);if(d<1)return"<1min";if(d<60)return d+"min";return Math.floor(d/60)+"h"+d%60+"min";}
+function turno(){const h=new Date().getHours();if(h>=7&&h<13)return"Manhã";if(h>=13&&h<19)return"Tarde";if(h>=19)return"Noite";return"Madrugada";}
+function beep(ctx){if(!ctx)return;try{[[0,520,220],[0.5,520,220]].forEach(([delay,f1,f2])=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.type="square";o.frequency.setValueAtTime(f1,ctx.currentTime+delay);o.frequency.exponentialRampToValueAtTime(f2,ctx.currentTime+delay+0.35);g.gain.setValueAtTime(0,ctx.currentTime+delay);g.gain.linearRampToValueAtTime(0.9,ctx.currentTime+delay+0.02);g.gain.setValueAtTime(0.9,ctx.currentTime+delay+0.25);g.gain.linearRampToValueAtTime(0,ctx.currentTime+delay+0.38);o.start(ctx.currentTime+delay);o.stop(ctx.currentTime+delay+0.4);});}catch(_){}}
+const efGrav=(g)=>{if(!g)return"leve";if((g.tcFila||0)>=5||(g.medFila||0)>=5||(g.triFila||0)>=5)return"critico";if((g.internados||0)>=5&&g.setor==="PA 2")return"critico";if(g.box10&&(g.internados||0)>=10&&g.setor==="PA 1")return"critico";if(g.tipo==="box10"&&g.box10Status==="ocupada_internado")return"critico";if(g.tipo==="box10"&&g.box10Status==="ocupada_pa")return"moderado";if(g.tipo==="box10"&&g.box10Status==="disponivel")return"leve";return g.gravidade||"leve";};
+
+const {useState,useEffect,useRef,useCallback} = React;
+
+const CSS = `
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#06080f;--sf:#0d1120;--sf2:#131a2e;--bd:#1c2a45;--gold:#c9a84c;--gold2:#e8c97a;--tx:#e8eaf0;--tx2:#8a96b0;--gr:#22c55e;--yw:#f59e0b;--rd:#ef4444;--r:12px;}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden;width:100%;}
+.app{min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;width:100%;}
+.hdr{background:linear-gradient(135deg,#06080f,#0a1628);border-bottom:2px solid #c9a84c33;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.hdr-l{display:flex;align-items:center;gap:10px;}
+.hdiv{width:1px;height:26px;background:#c9a84c44;}
+.ht{font-size:14px;font-weight:700;color:#e8c97a;}
+.hs{font-size:10px;color:var(--tx2);font-family:'JetBrains Mono';}
+.live{display:flex;align-items:center;gap:5px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:20px;padding:4px 8px;font-size:10px;color:var(--gr);font-family:'JetBrains Mono';}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--gr);animation:pulse 1.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+.alert{background:#3b0a0a;border-bottom:2px solid #ef4444;padding:9px 14px;display:flex;align-items:center;gap:8px;}
+.at{font-size:12px;font-weight:600;color:#fff;}
+.sync{font-size:10px;color:var(--tx2);text-align:center;padding:5px;font-family:'JetBrains Mono';background:var(--sf);border-bottom:1px solid var(--bd);}
+.tabs{display:flex;background:var(--sf);border-bottom:1px solid var(--bd);overflow-x:auto;}
+.tab{flex:1;min-width:56px;padding:9px 4px;text-align:center;cursor:pointer;font-size:11px;font-weight:500;color:var(--tx2);border-bottom:2px solid transparent;user-select:none;white-space:nowrap;}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold);background:rgba(201,168,76,.05);}
+.ti{font-size:14px;display:block;margin-bottom:2px;}
+.nb{background:#ef4444;color:#fff;border-radius:10px;padding:1px 5px;font-size:9px;margin-left:2px;}
+.cnt{flex:1;padding:14px;max-width:600px;margin:0 auto;width:100%;overflow-x:hidden;box-sizing:border-box;}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.ct{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;}
+.sel,.ta,.inp{width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;color:var(--tx);font-family:'Space Grotesk',sans-serif;font-size:14px;outline:none;-webkit-appearance:none;}
+.ta{resize:none;height:72px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.ob{padding:9px 8px;border-radius:8px;border:1.5px solid var(--bd);background:var(--sf2);color:var(--tx2);cursor:pointer;font-size:12px;font-weight:500;text-align:center;transition:all .15s;user-select:none;line-height:1.3;}
+.ob.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold);}
+.gb{padding:9px 8px;border-radius:8px;border:1.5px solid var(--bd);background:var(--sf2);color:var(--tx2);cursor:pointer;font-size:13px;font-weight:600;text-align:center;transition:all .15s;user-select:none;}
+.cr{display:flex;align-items:center;gap:10px;}
+.cb{width:36px;height:36px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.btn{width:100%;padding:13px;border-radius:10px;border:none;background:linear-gradient(135deg,#c9a84c,#e8c97a);color:#06080f;font-size:15px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;box-shadow:0 4px 18px rgba(201,168,76,.3);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.sbtn{padding:4px 9px;border-radius:20px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:10px;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
+.sbtn.on{border-color:rgba(34,197,94,.4);color:var(--gr);background:rgba(34,197,94,.08);}
+.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:10px;padding:12px;text-align:center;color:var(--gr);font-weight:600;margin-bottom:12px;}
+.sr{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.sc{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:12px;text-align:center;}
+.sv{font-size:26px;font-weight:700;font-family:'JetBrains Mono';}
+.sl{font-size:10px;color:var(--tx2);margin-top:2px;text-transform:uppercase;letter-spacing:.5px;}
+.fls{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;}
+.fb{padding:5px 12px;border-radius:20px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;font-family:'Space Grotesk',sans-serif;}
+.fb.on{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold);}
+.gi{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:13px;margin-bottom:10px;border-left:3px solid var(--bd);}
+.gi.leve{border-left-color:var(--gr);}
+.gi.moderado{border-left-color:var(--yw);}
+.gi.critico{border-left-color:var(--rd);animation:fl 2s ease-in-out infinite;}
+.gi.res{opacity:.55;border-left-color:#334155;animation:none;}
+@keyframes fl{0%,100%{border-left-color:#ef4444}50%{border-left-color:#fca5a5}}
+.gtop{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:7px;}
+.gn{font-size:13px;font-weight:700;}
+.gtp{font-size:12px;color:var(--tx2);margin-top:2px;}
+.bdg{padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;font-family:'JetBrains Mono';white-space:nowrap;flex-shrink:0;}
+.bdg.leve{background:rgba(34,197,94,.15);color:var(--gr);}
+.bdg.moderado{background:rgba(245,158,11,.15);color:var(--yw);}
+.bdg.critico{background:rgba(239,68,68,.15);color:var(--rd);}
+.bdg.res{background:rgba(51,65,85,.5);color:#64748b;}
+.gm{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:7px;}
+.mi{font-size:11px;color:var(--tx2);font-family:'JetBrains Mono';}
+.ib{background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);color:#fbbf24;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;font-family:'JetBrains Mono';}
+.rb{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:var(--gr);border-radius:6px;padding:2px 8px;font-size:11px;font-family:'JetBrains Mono';}
+.obt{font-size:12px;color:var(--tx2);margin-top:5px;font-style:italic;}
+.rvbtn{margin-top:9px;padding:6px 12px;border-radius:6px;border:1px solid rgba(34,197,94,.3);background:rgba(34,197,94,.08);color:var(--gr);font-size:11px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
+.pac-sec{font-size:13px;font-weight:700;margin:14px 0 8px;display:flex;align-items:center;gap:8px;}
+.pac-sec::after{content:'';flex:1;height:1px;background:var(--bd);}
+.pac-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
+.pc{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:11px 12px;border-left:3px solid;cursor:pointer;}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end;}
+.mod{background:var(--sf);border-radius:16px 16px 0 0;padding:20px;width:100%;max-height:90vh;overflow-y:auto;border-top:2px solid var(--bd);}
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);}
+.mlb{font-size:12px;color:var(--tx2);}
+.mvl{font-size:13px;font-weight:600;}
+.mact{display:flex;gap:8px;margin-top:14px;}
+.mdel{flex:1;padding:11px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:var(--rd);font-size:13px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
+.medt{flex:1;padding:11px;border-radius:8px;border:1px solid rgba(201,168,76,.3);background:rgba(201,168,76,.08);color:var(--gold);font-size:13px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;}
+.mcls{width:100%;padding:11px;border-radius:8px;border:1px solid var(--bd);background:var(--sf2);color:var(--tx2);font-size:13px;cursor:pointer;font-family:'Space Grotesk',sans-serif;margin-top:8px;}
+.rh{background:linear-gradient(135deg,#0a1628,#06080f);border:1px solid #c9a84c44;border-radius:var(--r);padding:18px;margin-bottom:12px;text-align:center;}
+.rt{font-size:17px;font-weight:700;color:#e8c97a;margin-bottom:3px;}
+.rs{font-size:11px;color:var(--tx2);font-family:'JetBrains Mono';}
+.rss{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.rsc{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:12px;}
+.rsv{font-size:22px;font-weight:700;font-family:'JetBrains Mono';}
+.rsl{font-size:11px;color:var(--tx2);margin-top:2px;}
+.stt{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.8px;margin:14px 0 7px;}
+.ri{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--sf);border:1px solid var(--bd);border-radius:8px;margin-bottom:5px;}
+.rl{font-size:12px;font-weight:500;}
+.rv{font-size:13px;font-weight:700;font-family:'JetBrains Mono';color:var(--gold2);}
+.exp{width:100%;padding:12px;border-radius:10px;border:1px solid var(--gold);background:rgba(201,168,76,.1);color:var(--gold);font-size:14px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;margin-top:6px;}
+.emp{text-align:center;padding:36px 20px;color:var(--tx2);}
+.ei{font-size:36px;margin-bottom:10px;opacity:.5;}
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:var(--sf);}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px;}
+.cnt{overflow-x:hidden;}
+.sr{width:100%;}
+.sc{min-width:0;word-break:break-word;}
+.fls{-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.fls::-webkit-scrollbar{display:none;}
+.gi{word-break:break-word;overflow:hidden;}
+.gn{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gm{flex-wrap:wrap;}
+.mi{font-size:10px;}
+`;
+
+function FilaWidget({n,numColor,borderColor,titulo,sub,ts,critico}){
+  return(
+    <div style={{borderRadius:"12px",padding:"10px 12px",marginBottom:"10px",display:"flex",alignItems:"center",gap:"10px",backgroundColor:"#06070d",border:`2px solid ${borderColor}`,boxShadow:critico?`0 0 14px ${borderColor}55`:"none",overflow:"hidden",minWidth:0}}>
+      <div style={{textAlign:"center",minWidth:"58px",flexShrink:0}}>
+        <div style={{fontSize:"38px",fontWeight:800,fontFamily:"JetBrains Mono,monospace",lineHeight:1,color:numColor}}>{n}</div>
+        <div style={{fontSize:"9px",textTransform:"uppercase",letterSpacing:"0.5px",marginTop:"3px",color:"#64748b"}}>pacientes</div>
+      </div>
+      <div style={{width:"1px",height:"44px",background:borderColor,flexShrink:0}}/>
+      <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
+        <div style={{fontSize:"12px",fontWeight:700,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{titulo}</div>
+        {sub&&<div style={{fontSize:"11px",color:"#94a3b8",marginTop:"3px"}}>{sub}</div>}
+        {ts&&<div style={{fontSize:"10px",color:"#475569",marginTop:"4px",fontFamily:"JetBrains Mono,monospace"}}>Atualizado: {fmtH(ts)}</div>}
+      </div>
+    </div>
+  );
+}
+
+function PacModal({pac,onClose,onDel,onEdit}){
+  const cat=CAT_PAC.find(c=>c.id===pac.cat)||CAT_PAC[0];
+  return(
+    <div className="ov" onClick={onClose}>
+      <div className="mod" onClick={e=>e.stopPropagation()}>
+        <div style={{fontSize:"16px",fontWeight:700,marginBottom:"4px"}}>{pac.nome}</div>
+        <div style={{fontSize:"12px",color:"var(--tx2)",marginBottom:"16px"}}>{pac.diag||"—"}</div>
+        <div className="mrow"><span className="mlb">Localização</span><span className="mvl">📍 {pac.pa} · {pac.box}</span></div>
+        <div className="mrow"><span className="mlb">Categoria</span><span className="mvl" style={{color:cat.color}}>{cat.icon} {cat.label}</span></div>
+        <div className="mrow"><span className="mlb">Registrado às</span><span className="mvl">{fmtH(pac.ts)}</span></div>
+        <div className="mrow"><span className="mlb">Tempo no PA</span><span className="mvl">⏱ {tdec(pac.ts)}</span></div>
+        {pac.por&&<div className="mrow"><span className="mlb">Por</span><span className="mvl">{pac.por}</span></div>}
+        {pac.obs&&<div className="mrow"><span className="mlb">Obs.</span><span className="mvl" style={{fontSize:"12px",textAlign:"right",maxWidth:"60%"}}>{pac.obs}</span></div>}
+        <div className="mact">
+          <button className="medt" onClick={onEdit}>✏️ Editar</button>
+          <button className="mdel" onClick={onDel}>✓ Alta / Remover</button>
+        </div>
+        <button className="mcls" onClick={onClose}>Fechar</button>
+      </div>
+    </div>
+  );
+}
+
+function FormPac({ini,onSave,onCancel}){
+  const[nome,setNome]=useState(ini?.nome||"");
+  const[pa,setPa]=useState(ini?.pa||"PA 1");
+  const[box,setBox]=useState(ini?.box||"Box 1");
+  const[cat,setCat]=useState(ini?.cat||"critico_uti");
+  const[diag,setDiag]=useState(ini?.diag||"");
+  const[obs,setObs]=useState(ini?.obs||"");
+  const[por,setPor]=useState(ini?.por||"");
+  const boxes=pa==="PA 1"?BOXES_PA1:BOXES_PA2;
+  const save=()=>{if(!nome.trim())return;onSave({id:ini?.id||uid(),nome:nome.trim(),pa,box,cat,diag,obs,por,ts:ini?.ts||Date.now()});};
+  return(
+    <div className="card">
+      <div className="ct">{ini?"Editar":"Adicionar Paciente"}</div>
+      <div style={{marginBottom:"10px"}}><div className="ct" style={{marginBottom:"6px"}}>Identificação</div><input className="inp" placeholder="Ex: J.S." value={nome} onChange={e=>setNome(e.target.value)}/></div>
+      <div style={{marginBottom:"10px"}}><div className="ct" style={{marginBottom:"6px"}}>Diagnóstico</div><input className="inp" placeholder="Ex: IAM, AVC..." value={diag} onChange={e=>setDiag(e.target.value)}/></div>
+      <div style={{marginBottom:"10px"}}>
+        <div className="ct" style={{marginBottom:"6px"}}>Categoria</div>
+        <div className="g2">{CAT_PAC.map(c=>(
+          <button key={c.id} onClick={()=>setCat(c.id)} style={{padding:"16px 10px",borderRadius:"10px",cursor:"pointer",textAlign:"center",border:`2px solid ${cat===c.id?c.color:"var(--bd)"}`,background:cat===c.id?c.color+"18":"var(--sf2)"}}>
+            <div style={{fontSize:"24px",marginBottom:"4px"}}>{c.icon}</div>
+            <div style={{fontSize:"12px",fontWeight:700,color:cat===c.id?c.color:"var(--tx)"}}>{c.label}</div>
+            <div style={{fontSize:"10px",color:"var(--tx2)",marginTop:"2px"}}>{c.desc}</div>
+          </button>
+        ))}</div>
+      </div>
+      <div style={{marginBottom:"10px"}}>
+        <div className="ct" style={{marginBottom:"6px"}}>Localização</div>
+        <div className="g2" style={{marginBottom:"8px"}}>{["PA 1","PA 2"].map(p=><button key={p} className={"ob"+(pa===p?" on":"")} onClick={()=>{setPa(p);setBox("Box 1");}}>{p}</button>)}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"5px"}}>{boxes.map(b=><button key={b} className={"ob"+(box===b?" on":"")} onClick={()=>setBox(b)} style={{padding:"7px 4px",fontSize:"11px"}}>{b}</button>)}</div>
+      </div>
+      <div style={{marginBottom:"10px"}}><div className="ct" style={{marginBottom:"6px"}}>Observação</div><textarea className="ta" placeholder="Pendências..." value={obs} onChange={e=>setObs(e.target.value)}/></div>
+      <div style={{marginBottom:"12px"}}>
+        <div className="ct" style={{marginBottom:"6px"}}>Registrado por</div>
+        <select className="sel" value={por} onChange={e=>setPor(e.target.value)}><option value="">Selecione...</option>{USUARIOS.map(u=><option key={u}>{u}</option>)}</select>
+      </div>
+      <div className="g2">
+        <button className="mcls" style={{padding:"12px"}} onClick={onCancel}>Cancelar</button>
+        <button className="btn" disabled={!nome.trim()} onClick={save} style={{fontSize:"14px"}}>Salvar</button>
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const[tab,setTab]=useState("registro");
+  const[gargs,setGargs]=useState([]);
+  const[pacs,setPacs]=useState([]);
+  const[filtro,setFiltro]=useState("todos");
+  const[showOk,setShowOk]=useState(false);
+  const[som,setSom]=useState(true);
+  const[actx,setActx]=useState(null);
+  const[lastSync,setLastSync]=useState(null);
+  const[fbReady,setFbReady]=useState(false);
+  const prevCrit=useRef(0);
+  const prevAutoRef=useRef(false);
+  const[user,setUser]=useState("");
+  const[setor,setSetor]=useState("");
+  const[tipo,setTipo]=useState("");
+  const[grav,setGrav]=useState("");
+  const[intern,setIntern]=useState(0);
+  const[obs,setObs]=useState("");
+  const[tcFila,setTcFila]=useState(0);
+  const[tcStatus,setTcStatus]=useState("");
+  const[medFila,setMedFila]=useState(0);
+  const[medStatus,setMedStatus]=useState("");
+  const[medMotivo,setMedMotivo]=useState([]);
+  const[triFila,setTriFila]=useState(0);
+  const[triStatus,setTriStatus]=useState("");
+  const[box10,setBox10]=useState(false);
+  const[box10Status,setBox10Status]=useState("");
+  const[modalPac,setModalPac]=useState(null);
+  const[editPac,setEditPac]=useState(null);
+  const[addPac,setAddPac]=useState(false);
+  const[fpaPac,setFpaPac]=useState("todos");
+  const[,setTick]=useState(0);
+  useEffect(()=>{const t=setInterval(()=>setTick(n=>n+1),30000);return()=>clearInterval(t);},[]);
+
+  useEffect(()=>{
+    const init=()=>{
+      setFbReady(true);
+      const {collection,onSnapshot,query,orderBy}=window.__fb;
+      const db=window.__db;
+      const qG=query(collection(db,"gargalos"),orderBy("timestamp","desc"));
+      onSnapshot(qG,snap=>{setGargs(snap.docs.map(d=>({...d.data(),fbId:d.id})));setLastSync(Date.now());});
+      const qP=query(collection(db,"pacientes"),orderBy("ts","desc"));
+      onSnapshot(qP,snap=>{setPacs(snap.docs.map(d=>({...d.data(),fbId:d.id})));});
+    };
+    if(window.__db)init();
+    else window.addEventListener("fb-ready",init,{once:true});
+  },[]);
+
+  const initAudio=useCallback(()=>{
+    if(!actx){try{const c=new(window.AudioContext||window.webkitAudioContext)();if(c.state==="suspended")c.resume();setActx(c);}catch(_){}}
+    else if(actx.state==="suspended"){actx.resume();}
+  },[actx]);
+
+  const ativos=gargs.filter(g=>!g.resolvido);
+  // For counting and widgets: deduplicate — keep only latest per setor+tipo
+  const ativosDedup=(()=>{
+    const seen=new Map();
+    // ativos is already sorted by timestamp desc (Firebase orderBy desc)
+    ativos.forEach(g=>{
+      const key=g.setor+"||"+g.tipo;
+      if(!seen.has(key))seen.set(key,g);
+    });
+    return Array.from(seen.values());
+  })();
+  const resolvidos=gargs.filter(g=>g.resolvido);
+  // For PA1 box10+internados: count as single item
+  const pa1HasCombCrit=ativosDedup.some(g=>g.tipo==="internados_bloqueando"&&g.setor==="PA 1"&&g.box10&&(g.internados||0)>=10);
+  const pa1HasBox10Crit=ativosDedup.some(g=>g.tipo==="box10"&&g.setor==="PA 1"&&g.box10Status==="ocupada_internado");
+  const pa1DoubleCrit=pa1HasCombCrit&&pa1HasBox10Crit?1:0;
+  // Exclude PA1 box10 from general counts — handled separately in widget
+  const ativosForCount=ativosDedup.filter(g=>!(g.tipo==="box10"&&g.setor==="PA 1"));
+  const nCrit=ativosForCount.filter(g=>efGrav(g)==="critico").length - pa1DoubleCrit
+    + (pa1HasBox10Crit||pa1HasCombCrit?1:0);
+  const nMod=ativosForCount.filter(g=>efGrav(g)==="moderado").length
+    + (ativosDedup.some(g=>g.tipo==="box10"&&g.setor==="PA 1"&&g.box10Status==="ocupada_pa")?1:0);
+  const nInt=ativosDedup.filter(g=>g.tipo==="internados_bloqueando").reduce((s,g)=>s+(g.internados||0),0);
+  const tcAtivo=ativosDedup.filter(g=>g.setor==="Tomografia"&&(g.tcFila||0)>0).sort((a,b)=>b.timestamp-a.timestamp);
+  const tcMax=tcAtivo.length>0?tcAtivo[0].tcFila:0;
+  const medAtivo=ativosDedup.filter(g=>g.setor==="Medicação"&&(g.medFila||0)>0).sort((a,b)=>b.timestamp-a.timestamp);
+  const medMax=medAtivo.length>0?medAtivo[0].medFila:0;
+  const triAtivo=ativosDedup.filter(g=>g.setor==="Triagem"&&(g.triFila||0)>0).sort((a,b)=>b.timestamp-a.timestamp);
+  const triMax=triAtivo.length>0?triAtivo[0].triFila:0;
+  const intAtivo=ativosDedup.filter(g=>g.tipo==="internados_bloqueando"&&(g.internados||0)>0).sort((a,b)=>b.timestamp-a.timestamp);
+  const intAtivoPA2=intAtivo.filter(g=>g.setor==="PA 2");
+  const intAtivoPA1=intAtivo.filter(g=>g.setor==="PA 1");
+  const intMaxPA2=intAtivoPA2.length>0?intAtivoPA2[0].internados:0;
+  const intMaxPA1=intAtivoPA1.length>0?intAtivoPA1[0].internados:0;
+  const intMax=intAtivo.length>0?intAtivo[0].internados:0;
+  const tcCrit=tcMax>=5,medCrit=medMax>=5,triCrit=triMax>=5,intCrit=intMaxPA2>=5||(intAtivoPA1[0]?.box10&&intMaxPA1>=10);
+  const anyAuto=tcCrit||medCrit||triCrit||intCrit;
+  useEffect(()=>{if(nCrit>prevCrit.current&&som&&actx)beep(actx);prevCrit.current=nCrit;},[nCrit,som,actx]);
+  useEffect(()=>{if(anyAuto&&!prevAutoRef.current&&som&&actx)beep(actx);prevAutoRef.current=anyAuto;},[anyAuto,som,actx]);
+
+  const gFilt=ativos.filter(g=>{
+    if(filtro==="todos")return true;
+    if(filtro==="critico")return efGrav(g)==="critico";
+    if(filtro==="moderado")return efGrav(g)==="moderado";
+    if(filtro==="internados")return g.tipo==="internados_bloqueando";
+    return g.setor===filtro;
+  }).sort((a,b)=>({critico:0,moderado:1,leve:2}[efGrav(a)]-{critico:0,moderado:1,leve:2}[efGrav(b)]));
+
+  const isTcS=setor==="Tomografia",isMedS=setor==="Medicação",isTriS=setor==="Triagem",isBox10=setor==="PA 1"&&tipo==="box10";
+
+  const submit=async()=>{
+    if(!user||!setor)return;
+    if(!isTcS&&!isMedS&&!isTriS&&!isBox10&&(!tipo||((!grav)&&!autoGrav)))return;
+    if(isTcS&&!tcStatus)return;
+    if(isMedS&&!medStatus)return;
+    if(isTriS&&!triStatus)return;
+    if(isBox10&&!box10Status)return;
+    initAudio();
+    const tipoF=isTcS?"exame_pendente":isMedS?"falta_vaga_medicacao":isTriS?"falta_pessoal":isBox10?"box10":tipo;
+    const gravF=isTcS?(ST_TC.find(s=>s.id===tcStatus)?.grav||"moderado"):isMedS?(ST_MED.find(s=>s.id===medStatus)?.grav||"moderado"):isTriS?(ST_TRI.find(s=>s.id===triStatus)?.grav||"moderado"):isBox10?(box10Status==="ocupada_internado"?"critico":box10Status==="ocupada_pa"?"moderado":"leve"):autoGrav?"critico":grav;
+    try{
+      const {collection,addDoc}=window.__fb;
+      await addDoc(collection(window.__db,"gargalos"),{setor,tipo:tipoF,gravidade:gravF,internados:tipo==="internados_bloqueando"?intern:0,obs,usuario:user,timestamp:Date.now(),resolvido:false,tsRes:null,tcFila:isTcS?tcFila:0,tcStatus:isTcS?tcStatus:"",medFila:isMedS?medFila:0,medStatus:isMedS?medStatus:"",medMotivo:isMedS?[...medMotivo]:[],triFila:isTriS?triFila:0,triStatus:isTriS?triStatus:"",box10:tipo==="internados_bloqueando"&&setor==="PA 1"?box10:false,box10Status:setor==="PA 1"&&tipo==="box10"?box10Status:""});
+      setSetor("");setTipo("");setGrav("");setIntern(0);setObs("");setTcFila(0);setTcStatus("");setMedFila(0);setMedStatus("");setMedMotivo([]);setTriFila(0);setTriStatus("");setBox10(false);setBox10Status("");
+      setShowOk(true);setTimeout(()=>setShowOk(false),3000);
+      setTab("painel");
+    }catch(e){alert("Erro ao salvar. Verifique conexão.");}
+  };
+
+  const resolver=async(fbId)=>{try{const {doc,updateDoc}=window.__fb;await updateDoc(doc(window.__db,"gargalos",fbId),{resolvido:true,tsRes:Date.now()});}catch(_){}};
+  const reverter=async(fbId)=>{try{const {doc,updateDoc}=window.__fb;await updateDoc(doc(window.__db,"gargalos",fbId),{resolvido:false,tsRes:null});}catch(_){}};
+  const tinfo=id=>{if(id==="box10")return{label:"Sala de Emergência (Box 10)",icon:"🏥"};return TIPOS.find(t=>t.id===id)||{label:id,icon:"⚠️"};};
+  const autoGrav=(tipo==="internados_bloqueando"&&setor==="PA 2"&&intern>=5)||(tipo==="internados_bloqueando"&&setor==="PA 1"&&intern>=10&&box10);const canSub=fbReady&&user&&setor&&(isTcS?tcStatus:isMedS?medStatus:isTriS?triStatus:isBox10?box10Status:(tipo&&(grav||autoGrav)));
+
+  const savePac=async(p)=>{
+    try{
+      const {collection,addDoc,doc,updateDoc}=window.__fb;
+      if(p.fbId){const {fbId,...d}=p;await updateDoc(doc(window.__db,"pacientes",fbId),d);}
+      else{await addDoc(collection(window.__db,"pacientes"),p);}
+      setAddPac(false);setEditPac(null);
+    }catch(_){alert("Erro ao salvar paciente.");}
+  };
+  const delPac=async(fbId)=>{
+    try{const {doc,deleteDoc}=window.__fb;await deleteDoc(doc(window.__db,"pacientes",fbId));setModalPac(null);}catch(_){}
+  };
+
+  const g24=gargs.filter(g=>g.timestamp>=Date.now()-86400000);
+  const g24r=g24.filter(g=>g.resolvido&&g.tsRes);
+  const tmed=g24r.length>0?Math.round(g24r.reduce((s,g)=>s+(g.tsRes-g.timestamp)/60000,0)/g24r.length):0;
+  const pct=g24.length>0?Math.round(g24r.length/g24.length*100):0;
+  const porSet=SETORES.map(s=>({s,n:g24.filter(g=>g.setor===s).length})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+  const porTip=TIPOS.map(t=>({...t,n:g24.filter(g=>g.tipo===t.id).length})).filter(x=>x.n>0).sort((a,b)=>b.n-a.n);
+
+  const exportar=()=>{
+    const sep=";";
+    const esc=v=>`"${String(v||"").replace(/"/g,'""')}"`;
+    const header=["Data/Hora","Setor","Tipo","Gravidade","Usuario","Obs","Fila TC","Fila Med","Fila Triagem","Internados","Status","Tempo Resolucao"].join(sep);
+    const linhas=g24.map(g=>[
+      fmtDH(g.timestamp),
+      g.setor,
+      tinfo(g.tipo).label,
+      efGrav(g).toUpperCase(),
+      g.usuario,
+      g.obs||"",
+      g.tcFila||0,
+      g.medFila||0,
+      g.triFila||0,
+      g.internados||0,
+      g.resolvido?"Resolvido":"Pendente",
+      g.resolvido&&g.tsRes?tdur(g.timestamp,g.tsRes):"",
+    ].map(esc).join(sep));
+    const resumo=[
+      ["","","","","","","","","","","",""].join(sep),
+      ["RESUMO","","","","","","","","","","",""].join(sep),
+      [esc("Data"),esc(new Date().toLocaleDateString("pt-BR")),"","","","","","","","","",""].join(sep),
+      [esc("Turno"),esc(turno()),"","","","","","","","","",""].join(sep),
+      [esc("Total registrados"),g24.length,"","","","","","","","","",""].join(sep),
+      [esc("Criticos"),g24.filter(g=>efGrav(g)==="critico").length,"","","","","","","","","",""].join(sep),
+      [esc("Resolvidos"),`${g24r.length} (${pct}%)`,"","","","","","","","","",""].join(sep),
+      [esc("Tempo medio resolucao (min)"),tmed,"","","","","","","","","",""].join(sep),
+      [esc("Criticos UTI ativos"),pacs.filter(p=>p.cat==="critico_uti").length,"","","","","","","","","",""].join(sep),
+      [esc("Recomendados ativos"),pacs.filter(p=>p.cat==="recomendado").length,"","","","","","","","","",""].join(sep),
+      ["","","","","","","","","","","",""].join(sep),
+      ["DETALHAMENTO","","","","","","","","","","",""].join(sep),
+      header,
+      ...linhas,
+    ];
+    const bom="﻿";
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([bom+resumo.join("\n")],{type:"text/csv;charset=utf-8"}));
+    a.download=`relatorio-dfstar-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  };
+
+  return(<>
+    <style>{CSS}</style>
+    <div className="app" onClick={initAudio}>
+      <div className="hdr">
+        <div className="hdr-l">
+          <img src={LOGO} alt="DF Star" style={{height:"34px",objectFit:"contain"}}/>
+          <div className="hdiv"/>
+          <div><div className="ht">Monitor de Gargalos</div><div className="hs">PA · Hospital DF Star</div></div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+          <button className={"sbtn"+(som?" on":"")} onClick={()=>setSom(v=>!v)}>{som?"🔔":"🔕"}</button>
+          <button className="sbtn" onClick={()=>{initAudio();setTimeout(()=>actx&&beep(actx),200);}}>🔊</button>
+          <div className="live"><div className="ldot"/>{fbReady?"AO VIVO":"..."}</div>
+        </div>
+      </div>
+
+      {lastSync&&<div className="sync">🔄 Sync: {fmtH(lastSync)} · {ativos.length} ativos · {pacs.length} pac.</div>}
+
+      {(()=>{if(nCrit===0)return null;const det=[triCrit?`Triagem: ${triMax}`:null,tcCrit?`TC: ${tcMax}`:null,medCrit?`Med: ${medMax}`:null,intCrit?`Internados: ${intMax}`:null].filter(Boolean);return(<div className="alert"><span>🚨</span><span className="at"><strong>{nCrit} crítico{nCrit>1?"s":""}</strong>{det.length>0?" — "+det.join(" · "):""}</span></div>);})()}
+
+      <div className="tabs">
+        {[{id:"registro",i:"📝",l:"Registrar"},{id:"painel",i:"📊",l:"Painel",b:nCrit||null},{id:"pacientes",i:"🏥",l:"Pacientes",b:pacs.filter(p=>p.cat==="critico_uti").length||null},{id:"historico",i:"🗂️",l:"Histórico"},{id:"relatorio",i:"📋",l:"Relatório"}].map(t=>(
+          <div key={t.id} className={"tab"+(tab===t.id?" on":"")} onClick={()=>setTab(t.id)}>
+            <span className="ti">{t.i}</span>{t.l}{t.b?<span className="nb">{t.b}</span>:null}
+          </div>
+        ))}
+      </div>
+
+      <div className="cnt">
+        {tab==="registro"&&<>
+          {showOk&&<div className="ok">✅ Registrado e sincronizado!</div>}
+          {!fbReady&&<div style={{background:"rgba(245,158,11,.1)",border:"1px solid rgba(245,158,11,.3)",borderRadius:"10px",padding:"10px",marginBottom:"12px",fontSize:"12px",color:"#fbbf24",textAlign:"center"}}>⏳ Conectando ao servidor...</div>}
+          <div className="card"><div className="ct">Quem está registrando?</div>
+            <select className="sel" value={user} onChange={e=>setUser(e.target.value)}><option value="">Selecione seu perfil...</option>{USUARIOS.map(u=><option key={u}>{u}</option>)}</select>
+          </div>
+          <div className="card"><div className="ct">Onde está o problema?</div>
+            <div className="g2">{SETORES.map(s=><button key={s} className={"ob"+(setor===s?" on":"")} onClick={()=>{setSetor(s);setTipo("");setGrav("");setTcStatus("");setMedStatus("");setTriStatus("");}}>{s}</button>)}</div>
+          </div>
+          {setor&&!isTcS&&!isMedS&&!isTriS&&<>
+            <div className="card"><div className="ct">Qual é o gargalo?</div>
+              {setor==="PA 1"&&<button className={"ob"+(tipo==="box10"?" on":"")} onClick={()=>setTipo("box10")} style={{display:"flex",alignItems:"center",gap:"10px",width:"100%",textAlign:"left",marginBottom:"5px",padding:"11px 12px",borderColor:tipo==="box10"?"#ef4444":"var(--bd)",background:tipo==="box10"?"rgba(239,68,68,.12)":"var(--sf2)",color:tipo==="box10"?"#ef4444":"var(--tx2)"}}><span style={{fontSize:"18px"}}>🏥</span><span>Sala de Emergência (Box 10)</span></button>}
+              {TIPOS.map(t=><button key={t.id} className={"ob"+(tipo===t.id?" on":"")} onClick={()=>setTipo(t.id)} style={{display:"flex",alignItems:"center",gap:"10px",width:"100%",textAlign:"left",marginBottom:"5px",padding:"11px 12px"}}><span style={{fontSize:"18px"}}>{t.icon}</span><span>{t.label}</span></button>)}
+            </div>
+            {tipo==="internados_bloqueando"&&<div className="card"><div className="ct">🛏️ Quantos internados aguardando leito?</div>
+              {intern>=5&&setor==="PA 2"&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:"8px",padding:"8px 12px",marginBottom:"10px",fontSize:"12px",color:"#fca5a5",fontWeight:600}}>🚨 ≥5 internados no PA 2 — situação crítica</div>}
+              <div className="cr"><button className="cb" onClick={()=>{const v=Math.max(0,intern-1);setIntern(v);if(v<5&&setor==="PA 2")setGrav("");} }>−</button><div style={{fontSize:"38px",fontWeight:800,fontFamily:"JetBrains Mono",color:((intern>=5&&setor==="PA 2")||(box10&&intern>=10&&setor==="PA 1"))?"#ef4444":"#fbbf24",minWidth:"50px",textAlign:"center"}}>{intern}</div><button className="cb" onClick={()=>{const v=intern+1;setIntern(v);if(v>=5&&setor==="PA 2")setGrav("critico");else if(v<5)setGrav(grav==="critico"&&setor==="PA 2"?"":grav);}}>+</button><span style={{fontSize:"12px",color:"var(--tx2)"}}>internados</span></div>
+              {setor==="PA 1"&&<>
+                <div style={{marginTop:"14px",marginBottom:"6px"}}>
+                  <div className="ct" style={{marginBottom:"8px"}}>🚨 Box 10 (Sala de Emergência)</div>
+                  <div className="g2">
+                    <button onClick={()=>setBox10(false)} style={{padding:"12px",borderRadius:"10px",cursor:"pointer",textAlign:"center",border:`2px solid ${!box10?"#22c55e":"var(--bd)"}`,background:!box10?"rgba(34,197,94,.12)":"var(--sf2)"}}>
+                      <div style={{fontSize:"20px",marginBottom:"3px"}}>✅</div>
+                      <div style={{fontSize:"12px",fontWeight:700,color:!box10?"#22c55e":"var(--tx2)"}}>Disponível</div>
+                    </button>
+                    <button onClick={()=>setBox10(true)} style={{padding:"12px",borderRadius:"10px",cursor:"pointer",textAlign:"center",border:`2px solid ${box10?"#ef4444":"var(--bd)"}`,background:box10?"rgba(239,68,68,.12)":"var(--sf2)"}}>
+                      <div style={{fontSize:"20px",marginBottom:"3px"}}>🚨</div>
+                      <div style={{fontSize:"12px",fontWeight:700,color:box10?"#ef4444":"var(--tx2)"}}>Ocupado por internado</div>
+                    </button>
+                  </div>
+                </div>
+                {box10&&intern>=10&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:"8px",padding:"8px 12px",marginTop:"8px",fontSize:"12px",color:"#fca5a5",fontWeight:600}}>🚨 PA 1 sem retaguarda de emergência — todos os boxes ocupados</div>}
+              </>}</div>}
+            {!isBox10&&!(tipo==="internados_bloqueando"&&setor==="PA 2"&&intern>=5)&&!(tipo==="internados_bloqueando"&&setor==="PA 1"&&intern>=10&&box10)&&<div className="card"><div className="ct">Gravidade</div><div className="g3">{GRAVS.map(g=><button key={g.id} className="gb" onClick={()=>setGrav(g.id)} style={{borderColor:grav===g.id?g.color:"var(--bd)",background:grav===g.id?g.color+"22":"var(--sf2)",color:grav===g.id?g.color:"var(--tx2)"}}>{g.label}</button>)}</div></div>}
+              {tipo==="internados_bloqueando"&&setor==="PA 2"&&intern>=5&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:"10px",padding:"12px",marginBottom:"12px",textAlign:"center"}}><div style={{fontSize:"12px",color:"#fca5a5",fontWeight:700}}>🚨 Gravidade definida automaticamente: CRÍTICO</div><div style={{fontSize:"11px",color:"#94a3b8",marginTop:"4px"}}>≥5 internados no PA 2</div></div>}
+              {tipo==="internados_bloqueando"&&setor==="PA 1"&&intern>=10&&box10&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:"10px",padding:"12px",marginBottom:"12px",textAlign:"center"}}><div style={{fontSize:"12px",color:"#fca5a5",fontWeight:700}}>🚨 Gravidade definida automaticamente: CRÍTICO</div><div style={{fontSize:"11px",color:"#94a3b8",marginTop:"4px"}}>≥10 internados + Box 10 ocupado no PA 1</div></div>}
+              {isBox10&&<div className="card">
+                <div className="ct">🏥 Status do Box 10 — Sala de Emergência</div>
+                {STATUS_BOX10.map(s=>(
+                  <button key={s.id} onClick={()=>setBox10Status(s.id)}
+                    style={{display:"flex",alignItems:"center",gap:"12px",width:"100%",textAlign:"left",marginBottom:"8px",padding:"13px 14px",borderRadius:"10px",cursor:"pointer",
+                      border:`2px solid ${box10Status===s.id?s.color:"var(--bd)"}`,
+                      background:box10Status===s.id?s.color+"18":"var(--sf2)"}}>
+                    <span style={{fontSize:"22px"}}>{s.icon}</span>
+                    <div>
+                      <div style={{fontSize:"13px",fontWeight:700,color:box10Status===s.id?s.color:"var(--tx)"}}>{s.label}</div>
+                      <div style={{fontSize:"11px",color:"var(--tx2)",marginTop:"2px"}}>{s.desc}</div>
+                    </div>
+                  </button>
+                ))}
+                {box10Status==="ocupada_internado"&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:"8px",padding:"8px 12px",marginTop:"4px",fontSize:"12px",color:"#fca5a5",fontWeight:600}}>🚨 Gravidade: CRÍTICO — sem retaguarda de emergência</div>}
+                {box10Status==="ocupada_pa"&&<div style={{background:"rgba(245,158,11,.1)",border:"1px solid rgba(245,158,11,.3)",borderRadius:"8px",padding:"8px 12px",marginTop:"4px",fontSize:"12px",color:"#fbbf24",fontWeight:600}}>⚠️ Gravidade: MODERADO — Box 10 em uso</div>}
+              </div>}
+          </>}
+          {isTriS&&<>
+            <div className="card"><div className="ct">🏷️ Status da triagem</div><div className="g2">{ST_TRI.map(s=><button key={s.id} onClick={()=>setTriStatus(s.id)} style={{padding:"16px 10px",borderRadius:"10px",cursor:"pointer",textAlign:"center",border:`2px solid ${triStatus===s.id?s.color:"var(--bd)"}`,background:triStatus===s.id?s.color+"18":"var(--sf2)"}}><div style={{fontSize:"26px",marginBottom:"4px"}}>{s.icon}</div><div style={{fontSize:"13px",fontWeight:700,color:triStatus===s.id?s.color:"var(--tx)"}}>{s.label}</div><div style={{fontSize:"10px",color:"var(--tx2)",marginTop:"3px"}}>{s.desc}</div></button>)}</div></div>
+            {triStatus&&<div className="card"><div className="ct">🔢 Pacientes aguardando triagem</div>{triFila>=5&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:"8px",padding:"8px 12px",marginBottom:"10px",fontSize:"12px",color:"#fca5a5",fontWeight:600}}>🚨 ≥5 pac. — considere abrir a 2ª triagem</div>}<div className="cr"><button className="cb" onClick={()=>setTriFila(Math.max(0,triFila-1))}>−</button><div style={{fontSize:"40px",fontWeight:800,fontFamily:"JetBrains Mono",color:triFila>=5?"#ef4444":"#22c55e",minWidth:"52px",textAlign:"center"}}>{triFila}</div><button className="cb" onClick={()=>setTriFila(triFila+1)}>+</button><span style={{fontSize:"12px",color:"var(--tx2)"}}>na triagem</span></div></div>}
+          </>}
+          {isMedS&&<>
+            <div className="card"><div className="ct">💊 Status da medicação</div><div className="g2">{ST_MED.map(s=><button key={s.id} onClick={()=>{setMedStatus(s.id);if(s.id==="normal")setMedMotivo([]);}} style={{padding:"16px 10px",borderRadius:"10px",cursor:"pointer",textAlign:"center",border:`2px solid ${medStatus===s.id?s.color:"var(--bd)"}`,background:medStatus===s.id?s.color+"18":"var(--sf2)"}}><div style={{fontSize:"26px",marginBottom:"4px"}}>{s.icon}</div><div style={{fontSize:"13px",fontWeight:700,color:medStatus===s.id?s.color:"var(--tx)"}}>{s.label}</div><div style={{fontSize:"10px",color:"var(--tx2)",marginTop:"3px"}}>{s.desc}</div></button>)}</div></div>
+            {medStatus==="atrasado"&&<div className="card"><div className="ct">⚠️ Motivo <span style={{fontWeight:400,fontSize:"10px",textTransform:"none",letterSpacing:0}}>(pode marcar mais de um)</span></div>{MOT_MED.map(m=>{const sel=medMotivo.includes(m.id);const tog=()=>setMedMotivo(p=>sel?p.filter(x=>x!==m.id):[...p,m.id]);return(<button key={m.id} onClick={tog} style={{display:"flex",alignItems:"center",gap:"10px",width:"100%",textAlign:"left",marginBottom:"7px",padding:"12px 14px",borderRadius:"10px",cursor:"pointer",border:`1.5px solid ${sel?"#f59e0b":"var(--bd)"}`,background:sel?"rgba(245,158,11,.12)":"var(--sf2)"}}><span style={{fontSize:"14px",minWidth:"22px",textAlign:"center",background:sel?"#f59e0b":"var(--bd)",borderRadius:"5px",padding:"2px 5px",color:sel?"#06080f":"var(--tx2)",fontWeight:700}}>{sel?"✓":m.icon}</span><span style={{fontSize:"13px",fontWeight:600,color:sel?"#f59e0b":"var(--tx)"}}>{m.label}</span></button>);})}</div>}
+            {medStatus&&<div className="card"><div className="ct">🔢 Pacientes aguardando medicação</div>{medFila>=5&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:"8px",padding:"8px 12px",marginBottom:"10px",fontSize:"12px",color:"#fca5a5",fontWeight:600}}>🚨 ≥5 pac. — atenção à fila</div>}<div className="cr"><button className="cb" onClick={()=>setMedFila(Math.max(0,medFila-1))}>−</button><div style={{fontSize:"40px",fontWeight:800,fontFamily:"JetBrains Mono",color:medFila>=5?"#ef4444":"#f59e0b",minWidth:"52px",textAlign:"center"}}>{medFila}</div><button className="cb" onClick={()=>setMedFila(medFila+1)}>+</button><span style={{fontSize:"12px",color:"var(--tx2)"}}>na fila</span></div></div>}
+          </>}
+          {isTcS&&<>
+            <div className="card"><div className="ct">🔬 Status dos tomógrafos</div>{ST_TC.map(s=><button key={s.id} onClick={()=>setTcStatus(s.id)} style={{display:"flex",alignItems:"center",gap:"12px",width:"100%",textAlign:"left",marginBottom:"8px",padding:"14px",borderRadius:"10px",cursor:"pointer",border:`2px solid ${tcStatus===s.id?s.color:"var(--bd)"}`,background:tcStatus===s.id?s.color+"18":"var(--sf2)"}}><span style={{fontSize:"26px"}}>{s.icon}</span><div><div style={{fontSize:"13px",fontWeight:700,color:tcStatus===s.id?s.color:"var(--tx)"}}>{s.label}</div><div style={{fontSize:"11px",color:"var(--tx2)",marginTop:"2px"}}>{s.desc}</div></div></button>)}</div>
+            {tcStatus&&<div className="card"><div className="ct">🔢 Pacientes aguardando tomografia</div>{tcFila>=5&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:"8px",padding:"8px 12px",marginBottom:"10px",fontSize:"12px",color:"#fca5a5",fontWeight:600}}>🚨 ≥5 pac. — fila crítica</div>}<div className="cr"><button className="cb" onClick={()=>setTcFila(Math.max(0,tcFila-1))}>−</button><div style={{fontSize:"40px",fontWeight:800,fontFamily:"JetBrains Mono",color:tcFila>=5?"#ef4444":"#06b6d4",minWidth:"52px",textAlign:"center"}}>{tcFila}</div><button className="cb" onClick={()=>setTcFila(tcFila+1)}>+</button><span style={{fontSize:"12px",color:"var(--tx2)"}}>na fila TC</span></div></div>}
+          </>}
+          <div className="card"><div className="ct">Observação (opcional)</div><textarea className="ta" placeholder="Detalhes adicionais..." value={obs} onChange={e=>setObs(e.target.value)}/></div>
+          <button className="btn" disabled={!canSub} onClick={submit}>Registrar Gargalo</button>
+        </>}
+
+        {tab==="painel"&&<>
+          <div className="sr">
+            <div className="sc" style={{borderTop:"2px solid var(--rd)"}}><div className="sv" style={{color:"var(--rd)"}}>{nCrit}</div><div className="sl">Críticos</div></div>
+            <div className="sc" style={{borderTop:"2px solid var(--yw)"}}><div className="sv" style={{color:"var(--yw)"}}>{nMod}</div><div className="sl">Moderados</div></div>
+            <div className="sc" style={{borderTop:"2px solid #fbbf24"}}><div className="sv" style={{color:"#fbbf24"}}>{nInt}</div><div className="sl">Internados</div></div>
+          </div>
+          {(()=>{
+            // ── Build widgets ─────────────────────────────────────────
+            // Check if PA1 has a combined internados+box10 critical situation
+            const pa1CombCrit=intAtivoPA1[0]?.box10&&intMaxPA1>=10;
+            // Check for standalone box10 registration (tipo==="box10")
+            const b10Reg=ativosDedup.filter(g=>g.tipo==="box10"&&g.setor==="PA 1"&&g.box10Status&&g.box10Status!=="disponivel").sort((a,b)=>b.timestamp-a.timestamp)[0];
+
+            // PA1 internados widget — merge with box10 info if applicable
+            const pa1Widget=(()=>{
+              if(intMaxPA1<=0&&!b10Reg)return null;
+              // If combined critical (internados+box10 toggled inside internados form)
+              if(pa1CombCrit){
+                return{crit:true,n:intMaxPA1,numColor:"#ef4444",borderColor:"#ef4444",
+                  titulo:"🏥 PA 1 — Sem retaguarda · Box 10 ocupado com internado",
+                  sub:`${intMaxPA1} internados · todos os boxes ocupados`,ts:intAtivoPA1[0]?.timestamp};
+              }
+              // If standalone box10 registration
+              if(b10Reg&&intMaxPA1<=0){
+                return{crit:b10Reg.box10Status==="ocupada_internado",n:null,
+                  numColor:b10Reg.box10Status==="ocupada_internado"?"#ef4444":"#f59e0b",
+                  borderColor:b10Reg.box10Status==="ocupada_internado"?"#ef4444":"#f59e0b55",
+                  titulo:b10Reg.box10Status==="ocupada_internado"
+                    ?"🏥 PA 1 · Box 10 — Ocupado com internado aguardando leito"
+                    :"🏥 PA 1 · Box 10 — Ocupado com paciente de atendimento PA",
+                  sub:b10Reg.box10Status==="ocupada_internado"?"⚠️ Sem retaguarda de emergência":"⚠️ Sala de emergência em uso",
+                  ts:b10Reg.timestamp};
+              }
+              // If both exist separately, only merge if b10Reg is newer than latest internados
+              if(b10Reg&&intMaxPA1>0){
+                const b10IsNewer=b10Reg.timestamp>=(intAtivoPA1[0]?.timestamp||0);
+                if(b10IsNewer){
+                  const isCrit=b10Reg.box10Status==="ocupada_internado";
+                  return{crit:isCrit,n:intMaxPA1,
+                    numColor:isCrit?"#ef4444":"#f59e0b",
+                    borderColor:isCrit?"#ef4444":"#f59e0b55",
+                    titulo:isCrit
+                      ?"🏥 PA 1 — Sem retaguarda · Box 10 ocupado com internado"
+                      :"🏥 PA 1 · Box 10 ocupado com paciente de atendimento PA",
+                    sub:isCrit?`${intMaxPA1} internados · sem retaguarda de emergência`:`${intMaxPA1} internados · sala de emergência em uso`,
+                    ts:b10Reg.timestamp};
+                }
+              }
+              // Just internados PA1, no box10 issue
+              return{crit:false,n:intMaxPA1,numColor:"#94a3b8",borderColor:"#1c2a45",
+                titulo:"🛏️ Internados PA 1",ts:intAtivoPA1[0]?.timestamp,sub:undefined};
+            })();
+
+            const filaWidgets=[
+              triMax>0?{crit:triCrit,n:triMax,numColor:triCrit?"#ef4444":"#f59e0b",borderColor:triCrit?"#ef4444":"#f59e0b55",titulo:triCrit?"🏷️ Triagem — ABRIR 2ª TRIAGEM":"🏷️ Fila de Triagem",ts:triAtivo[0]?.timestamp}:null,
+              intMaxPA2>0?{crit:intCrit,n:intMaxPA2,numColor:intCrit?"#ef4444":"#f59e0b",borderColor:intCrit?"#ef4444":"#f59e0b55",titulo:intCrit?"🛏️ Internados PA 2 — CRÍTICO":"🛏️ Internados PA 2",ts:intAtivoPA2[0]?.timestamp}:null,
+              pa1Widget,
+              medMax>0?{crit:medCrit,n:medMax,numColor:medCrit?"#ef4444":"#f59e0b",borderColor:medCrit?"#ef4444":"#f59e0b55",titulo:medCrit?"💊 Medicação — CRÍTICO":"💊 Fila de Medicação",sub:medAtivo[0]?.medMotivo?.length>0?medAtivo[0].medMotivo.map(id=>MOT_MED.find(m=>m.id===id)?.label).filter(Boolean).join(" · "):undefined,ts:medAtivo[0]?.timestamp}:null,
+              tcMax>0?{crit:tcCrit,n:tcMax,numColor:tcCrit?"#ef4444":"#f59e0b",borderColor:tcCrit?"#ef4444":"#f59e0b55",titulo:tcCrit?"🔬 Tomografia — CRÍTICO":"🔬 Fila de Tomografia",sub:tcAtivo[0]?.tcStatus?ST_TC.find(s=>s.id===tcAtivo[0].tcStatus)?.label:undefined,ts:tcAtivo[0]?.timestamp}:null,
+            ].filter(Boolean);
+
+            // Generic gargalo widgets — exclude PA1 internados and box10 (already handled above)
+            const filaSetores=["Tomografia","Medicação","Triagem"];
+            const gargaloWidgets=ativosDedup
+              .filter(g=>efGrav(g)==="critico"
+                &&!filaSetores.includes(g.setor)
+                &&!(g.tipo==="internados_bloqueando"&&g.setor==="PA 2")
+                &&!(g.tipo==="internados_bloqueando"&&g.setor==="PA 1")
+                &&g.tipo!=="box10")
+              .map(g=>({crit:true,n:null,numColor:"#ef4444",borderColor:"#ef4444",
+                titulo:`🚨 ${g.setor} — ${tinfo(g.tipo).label}`,ts:g.timestamp}));
+
+            const gargaloMod=ativosDedup
+              .filter(g=>efGrav(g)==="moderado"
+                &&!filaSetores.includes(g.setor)
+                &&!(g.tipo==="internados_bloqueando"&&g.setor==="PA 1")
+                &&g.tipo!=="box10"
+                &&!(g.tipo==="internados_bloqueando"&&g.setor==="PA 2"))
+              .map(g=>({crit:false,n:null,numColor:"#f59e0b",borderColor:"#f59e0b55",
+                titulo:`⚠️ ${g.setor} — ${tinfo(g.tipo).label}`,ts:g.timestamp}));
+
+            const gargaloLeve=ativosDedup
+              .filter(g=>efGrav(g)==="leve"
+                &&!filaSetores.includes(g.setor)
+                &&!(g.tipo==="internados_bloqueando"&&g.setor==="PA 1")
+                &&g.tipo!=="box10"
+                &&!(g.tipo==="internados_bloqueando"&&g.setor==="PA 2"))
+              .map(g=>({crit:false,n:null,numColor:"#22c55e",borderColor:"#22c55e33",
+                titulo:`✅ ${g.setor} — ${tinfo(g.tipo).label}`,ts:g.timestamp}));
+
+            const todos=[...filaWidgets,...gargaloWidgets,...gargaloMod,...gargaloLeve];
+            const criticos=todos.filter(w=>w.crit);
+            const moderadosW=todos.filter(w=>!w.crit&&w.numColor==="#f59e0b");
+            const levesW=todos.filter(w=>!w.crit&&w.numColor!=="#f59e0b");
+            // Todos os críticos + completar até 5 com moderados depois leves
+            const extraSlots=Math.max(0,5-criticos.length);
+            const naocritsOrdenados=[...moderadosW,...levesW];
+            const ordenados=[...criticos,...naocritsOrdenados.slice(0,extraSlots)];
+            return ordenados.map((w,i)=>(
+              <div key={i} style={{borderRadius:"12px",padding:"10px 12px",marginBottom:"10px",display:"flex",alignItems:"center",gap:"10px",backgroundColor:"#06070d",border:`2px solid ${w.borderColor}`,boxShadow:w.crit?`0 0 14px ${w.borderColor}55`:"none",overflow:"hidden",minWidth:0}}>
+                {w.n!==null&&<>
+                  <div style={{textAlign:"center",minWidth:"54px",flexShrink:0}}>
+                    <div style={{fontSize:"36px",fontWeight:800,fontFamily:"JetBrains Mono,monospace",lineHeight:1,color:w.numColor}}>{w.n}</div>
+                    <div style={{fontSize:"9px",textTransform:"uppercase",letterSpacing:"0.5px",marginTop:"3px",color:"#64748b"}}>pacientes</div>
+                  </div>
+                  <div style={{width:"1px",height:"40px",background:w.borderColor,flexShrink:0}}/>
+                </>}
+                {w.n===null&&<div style={{width:"8px",height:"40px",borderRadius:"4px",background:w.numColor,flexShrink:0}}/>}
+                <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
+                  <div style={{fontSize:"12px",fontWeight:700,color:"#f1f5f9",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.titulo}</div>
+                  {w.sub&&<div style={{fontSize:"11px",color:"#94a3b8",marginTop:"3px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{w.sub}</div>}
+                  {w.ts&&<div style={{fontSize:"10px",color:"#475569",marginTop:"4px",fontFamily:"JetBrains Mono,monospace"}}>{fmtH(w.ts)}</div>}
+                </div>
+              </div>
+            ));
+          })()}
+          <div className="fls">{["todos","critico","moderado","internados",...SETORES].map(f=><button key={f} className={"fb"+(filtro===f?" on":"")} onClick={()=>setFiltro(f)}>{f==="todos"?"Todos":f==="critico"?"🔴 Críticos":f==="moderado"?"🟡 Moderados":f==="internados"?"🛏️ Internados":f}</button>)}</div>
+          {gFilt.length===0?<div className="emp"><div className="ei">✅</div><div>Nenhum gargalo ativo</div></div>
+          :gFilt.map(g=>(
+            <div key={g.fbId} className={"gi "+efGrav(g)}>
+              <div className="gtop"><div>
+                <div className="gn">{g.setor}</div>
+                <div className="gtp">
+                  {g.tipo==="box10"
+                    ? g.box10Status==="ocupada_internado"
+                      ? "🏥 Box 10 — Ocupado com internado aguardando leito"
+                      : g.box10Status==="ocupada_pa"
+                      ? "🏥 Box 10 — Ocupado com paciente de atendimento PA"
+                      : "🏥 Box 10 — Disponível"
+                    : `${tinfo(g.tipo).icon} ${tinfo(g.tipo).label}`}
+                </div>
+              </div><span className={"bdg "+efGrav(g)}>{efGrav(g).toUpperCase()}</span></div>
+              {(g.internados||0)>0&&<div style={{marginBottom:"7px"}}>
+                <span style={{background:((g.internados||0)>=5&&g.setor==="PA 2")?"rgba(239,68,68,.15)":"rgba(251,191,36,.15)",border:`1px solid ${((g.internados||0)>=5&&g.setor==="PA 2")?"rgba(239,68,68,.3)":"rgba(251,191,36,.3)"}`,color:((g.internados||0)>=5&&g.setor==="PA 2")?"#fca5a5":"#fbbf24",borderRadius:"6px",padding:"2px 8px",fontSize:"11px",fontWeight:600,fontFamily:"JetBrains Mono"}}>
+                  🛏️ {g.internados} internados aguardando leito{(g.internados||0)>=5&&g.setor==="PA 2"?" — CRÍTICO":""}
+                </span>
+              </div>}
+              {(g.triFila||0)>0&&<div style={{marginBottom:"8px",display:"flex",alignItems:"center",gap:"8px"}}><span style={{fontSize:"22px",fontWeight:800,color:g.triFila>=5?"#ef4444":"#22c55e",fontFamily:"JetBrains Mono"}}>{g.triFila}</span><span style={{fontSize:"12px",color:g.triFila>=5?"#fca5a5":"#86efac"}}>na triagem{g.triFila>=5?" — abrir 2ª triagem":""}</span></div>}
+              {(g.medFila||0)>0&&<div style={{marginBottom:"8px"}}><div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"4px"}}><span style={{fontSize:"22px",fontWeight:800,color:g.medFila>=5?"#ef4444":"#f59e0b",fontFamily:"JetBrains Mono"}}>{g.medFila}</span><span style={{fontSize:"12px",color:g.medFila>=5?"#fca5a5":"#fbbf24"}}>aguardando medicação</span></div>{g.medMotivo?.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:"4px"}}>{g.medMotivo.map(id=>{const m=MOT_MED.find(x=>x.id===id);return m?<span key={id} style={{fontSize:"10px",background:"rgba(245,158,11,.15)",color:"#f59e0b",border:"1px solid rgba(245,158,11,.3)",borderRadius:"6px",padding:"2px 6px"}}>{m.icon} {m.label}</span>:null;})}</div>}</div>}
+              {(g.tcFila||0)>0&&<div style={{marginBottom:"8px",display:"flex",alignItems:"center",gap:"8px"}}><span style={{fontSize:"22px",fontWeight:800,color:g.tcFila>=5?"#ef4444":"#06b6d4",fontFamily:"JetBrains Mono"}}>{g.tcFila}</span><span style={{fontSize:"12px",color:g.tcFila>=5?"#fca5a5":"#a5f3fc"}}>aguardando TC{g.tcStatus?" · "+ST_TC.find(s=>s.id===g.tcStatus)?.label:""}</span></div>}
+              {g.obs&&<div className="obt">"{g.obs}"</div>}
+              <div className="gm"><span className="mi">👤 {g.usuario}</span><span className="mi">🕐 {fmtH(g.timestamp)}</span><span className="mi">⏱ há {tdec(g.timestamp)}</span></div>
+              <button className="rvbtn" onClick={()=>resolver(g.fbId)}>✓ Marcar como resolvido</button>
+            </div>
+          ))}
+        </>}
+
+        {tab==="pacientes"&&<>
+          {!addPac&&!editPac&&<>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}><span style={{fontSize:"13px",color:"var(--tx2)"}}>{pacs.length} paciente{pacs.length!==1?"s":""} mapeado{pacs.length!==1?"s":""}</span><button className="btn" style={{width:"auto",padding:"8px 16px",fontSize:"13px"}} onClick={()=>setAddPac(true)}>+ Adicionar</button></div>
+            <div className="fls">{["todos","PA 1","PA 2"].map(f=><button key={f} className={"fb"+(fpaPac===f?" on":"")} onClick={()=>setFpaPac(f)}>{f==="todos"?"Todos os PAs":f}</button>)}</div>
+            {(()=>{const crit=pacs.filter(p=>p.cat==="critico_uti"&&(fpaPac==="todos"||p.pa===fpaPac));return crit.length>0&&<><div className="pac-sec" style={{color:"#ef4444"}}>🚨 Críticos / UTI — {crit.length}</div><div className="pac-grid">{crit.map(p=><div key={p.fbId} className="pc" style={{borderLeftColor:"#ef4444",background:"#1a0808"}} onClick={()=>setModalPac(p)}><div style={{fontSize:"13px",fontWeight:700,color:"#fff"}}>{p.nome}</div>{p.diag&&<div style={{fontSize:"11px",color:"#ffaaaa",marginTop:"1px"}}>{p.diag}</div>}<div style={{fontSize:"12px",fontWeight:700,fontFamily:"JetBrains Mono",marginTop:"5px",color:"#fff"}}>📍 {p.pa} · {p.box}</div><div><span style={{display:"inline-flex",alignItems:"center",gap:"4px",fontSize:"10px",fontWeight:600,padding:"2px 7px",borderRadius:"10px",marginTop:"5px",background:"#ef444430",color:"#fca5a5",border:"1px solid #ef444455"}}>🚨 Crítico/UTI</span></div><div style={{fontSize:"10px",color:"#ffaaaa",fontFamily:"JetBrains Mono",marginTop:"3px"}}>⏱ {tdec(p.ts)}</div></div>)}</div></>})()}
+            {(()=>{const rec=pacs.filter(p=>p.cat==="recomendado"&&(fpaPac==="todos"||p.pa===fpaPac));return rec.length>0&&<><div className="pac-sec" style={{color:"#c9a84c"}}>⭐ Recomendados — {rec.length}</div><div className="pac-grid">{rec.map(p=><div key={p.fbId} className="pc" style={{borderLeftColor:"#c9a84c"}} onClick={()=>setModalPac(p)}><div style={{fontSize:"13px",fontWeight:700,color:"#fff"}}>{p.nome}</div>{p.diag&&<div style={{fontSize:"11px",color:"#d4b896",marginTop:"1px"}}>{p.diag}</div>}<div style={{fontSize:"12px",fontWeight:700,fontFamily:"JetBrains Mono",marginTop:"5px",color:"#e8d5b0"}}>📍 {p.pa} · {p.box}</div><div><span style={{display:"inline-flex",alignItems:"center",gap:"4px",fontSize:"10px",fontWeight:600,padding:"2px 7px",borderRadius:"10px",marginTop:"5px",background:"#c9a84c22",color:"#e8c97a",border:"1px solid #c9a84c44"}}>⭐ Recomendado</span></div><div style={{fontSize:"10px",color:"var(--tx2)",fontFamily:"JetBrains Mono",marginTop:"3px"}}>⏱ {tdec(p.ts)}</div></div>)}</div></>})()}
+            {pacs.filter(p=>fpaPac==="todos"||p.pa===fpaPac).length===0&&<div className="emp"><div className="ei">🏥</div><div>Nenhum paciente mapeado</div></div>}
+          </>}
+          {(addPac||editPac)&&<FormPac ini={editPac} onSave={savePac} onCancel={()=>{setAddPac(false);setEditPac(null);}}/>}
+          {modalPac&&<PacModal pac={modalPac} onClose={()=>setModalPac(null)} onDel={()=>delPac(modalPac.fbId)} onEdit={()=>{setEditPac(modalPac);setModalPac(null);}}/>}
+        </>}
+
+        {tab==="historico"&&<>
+          <div className="card" style={{textAlign:"center",padding:"12px"}}><span style={{fontSize:"13px",color:"var(--tx2)"}}>{resolvidos.length} gargalo{resolvidos.length!==1?"s":""} resolvido{resolvidos.length!==1?"s":""}</span></div>
+          {resolvidos.length===0?<div className="emp"><div className="ei">🗂️</div><div>Nenhum gargalo resolvido ainda</div></div>
+          :[...resolvidos].sort((a,b)=>b.tsRes-a.tsRes).map(g=>(
+            <div key={g.fbId} className="gi res">
+              <div className="gtop"><div><div className="gn">{g.setor}</div><div className="gtp">{tinfo(g.tipo).icon} {tinfo(g.tipo).label}</div></div><span className="bdg res">RESOLVIDO</span></div>
+              {g.obs&&<div className="obt">"{g.obs}"</div>}
+              <div className="gm"><span className="mi">👤 {g.usuario}</span><span className="mi">🕐 {fmtDH(g.timestamp)}</span></div>
+              {g.tsRes&&<div style={{marginTop:"6px",display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
+                <span className="rb">✓ Resolvido em {tdur(g.timestamp,g.tsRes)}</span>
+                <button onClick={()=>reverter(g.fbId)} style={{padding:"3px 10px",borderRadius:"6px",border:"1px solid rgba(245,158,11,.3)",background:"rgba(245,158,11,.08)",color:"#f59e0b",fontSize:"11px",fontWeight:600,cursor:"pointer",fontFamily:"Space Grotesk,sans-serif"}}>↩ Reabrir</button>
+              </div>}
+            </div>
+          ))}
+        </>}
+
+        {tab==="relatorio"&&<>
+          <div className="rh"><img src={LOGO} alt="DF Star" style={{height:"38px",objectFit:"contain",marginBottom:"8px"}}/><div className="rt">Relatório de Gargalos</div><div className="rs">Hospital DF Star · Pronto Atendimento · 24h</div><div className="rs" style={{marginTop:"4px"}}>{new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long"})} · {turno()}</div></div>
+          <div className="rss"><div className="rsc"><div className="rsv" style={{color:"var(--gold2)"}}>{g24.length}</div><div className="rsl">Total</div></div><div className="rsc"><div className="rsv" style={{color:"var(--gr)"}}>{pct}%</div><div className="rsl">Resolvidos</div></div><div className="rsc"><div className="rsv" style={{color:"var(--rd)"}}>{g24.filter(g=>efGrav(g)==="critico").length}</div><div className="rsl">Críticos</div></div><div className="rsc"><div className="rsv" style={{color:"var(--yw)"}}>{tmed} min</div><div className="rsl">Tempo médio</div></div></div>
+          <div className="rss"><div className="rsc"><div className="rsv" style={{color:"#ef4444"}}>{pacs.filter(p=>p.cat==="critico_uti").length}</div><div className="rsl">🚨 Críticos UTI</div></div><div className="rsc"><div className="rsv" style={{color:"#c9a84c"}}>{pacs.filter(p=>p.cat==="recomendado").length}</div><div className="rsl">⭐ Recomendados</div></div></div>
+          <div className="stt">🏥 Por setor</div>
+          {porSet.length===0?<div style={{color:"var(--tx2)",fontSize:"13px",marginBottom:"10px"}}>Sem dados</div>:porSet.map(x=><div key={x.s} className="ri"><span className="rl">{x.s}</span><span className="rv">{x.n}×</span></div>)}
+          <div className="stt">⚠️ Tipos frequentes</div>
+          {porTip.length===0?<div style={{color:"var(--tx2)",fontSize:"13px",marginBottom:"10px"}}>Sem dados</div>:porTip.map(x=><div key={x.id} className="ri"><span className="rl">{x.icon} {x.label}</span><span className="rv">{x.n}×</span></div>)}
+          <button className="exp" onClick={exportar}>⬇ Exportar relatório (.csv)</button>
+          <div style={{fontSize:"11px",color:"var(--tx2)",textAlign:"center",marginTop:"6px",paddingBottom:"20px"}}>Arquivo pronto para apresentar à diretoria</div>
+        </>}
+      </div>
+    </div>
+  </>);
+}
+
+window.addEventListener("fb-ready",()=>{
+  const root=ReactDOM.createRoot(document.getElementById("app"));
+  root.render(React.createElement(App));
+});
+if(window.__db){
+  const root=ReactDOM.createRoot(document.getElementById("app"));
+  root.render(React.createElement(App));
+}
+</script>
+</body>
+</html>
