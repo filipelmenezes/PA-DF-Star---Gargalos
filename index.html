@@ -392,8 +392,8 @@ function App(){
   const intMax=intAtivo.length>0?intAtivo[0].internados:0;
   const tcCrit=tcMax>=5,medCrit=medMax>=5,triCrit=triMax>=5,intCrit=intMaxPA2>=5||(intAtivoPA1[0]?.box10&&intMaxPA1>=10);
   const anyAuto=tcCrit||medCrit||triCrit||intCrit;
-  useEffect(()=>{if(nCrit>prevCrit.current&&som&&actx)beep(actx);prevCrit.current=nCrit;},[nCrit,som,actx]);
-  useEffect(()=>{if(anyAuto&&!prevAutoRef.current&&som&&actx)beep(actx);prevAutoRef.current=anyAuto;},[anyAuto,som,actx]);
+  useEffect(()=>{if(nCrit>prevCrit.current&&som&&actx&&isGestor)beep(actx);prevCrit.current=nCrit;},[nCrit,som,actx,isGestor]);
+  useEffect(()=>{if(anyAuto&&!prevAutoRef.current&&som&&actx&&isGestor)beep(actx);prevAutoRef.current=anyAuto;},[anyAuto,som,actx,isGestor]);
 
   const gFilt=ativos.filter(g=>{
     if(filtro==="todos")return true;
@@ -845,7 +845,7 @@ function App(){
               • Cada gestor ativa os alertas no <strong style={{color:"var(--tx)"}}>próprio celular</strong><br/>
               • Quando alguém registrar um crítico, uma notificação aparece na tela<br/>
               • Funciona mesmo com o app fechado<br/>
-              • Você e a Dra. Natália precisam cada um ativar no próprio celular
+              • Você e a Dra. Nathália precisam cada um ativar no próprio celular
             </div>
           </div>
         </>}
