@@ -790,6 +790,66 @@ function App(){
           <button className="exp" onClick={exportar}>⬇ Exportar relatório (.csv)</button>
           <div style={{fontSize:"11px",color:"var(--tx2)",textAlign:"center",marginTop:"6px",paddingBottom:"20px"}}>Arquivo pronto para apresentar à diretoria</div>
         </>}
+
+        {tab==="alertas"&&<>
+          <div className="card">
+            <div className="ct">🔔 Notificações para Gestores</div>
+            <div style={{fontSize:"13px",color:"var(--tx2)",marginBottom:"14px",lineHeight:1.5}}>
+              Ative para receber alertas no celular quando um gargalo <strong style={{color:"#ef4444"}}>crítico</strong> for registrado — mesmo com o app fechado.
+            </div>
+            {!isGestor&&<>
+              <div style={{marginBottom:"12px"}}>
+                <div className="ct" style={{marginBottom:"6px"}}>Seu cargo</div>
+                <select className="sel" value={user} onChange={e=>setUser(e.target.value)}>
+                  <option value="">Selecione...</option>
+                  {USUARIOS.map(u=><option key={u}>{u}</option>)}
+                </select>
+              </div>
+              <button className="btn" onClick={async()=>{
+                localStorage.setItem("pa_gestor","true");
+                setIsGestor(true);
+                try{
+                  const perm=await Notification.requestPermission();
+                  if(perm==="granted"){
+                    setNotifStatus("granted");
+                    if(window.__messaging&&window.__getToken){
+                      const token=await window.__getToken(window.__messaging,{vapidKey:VAPID_KEY});
+                      if(token){await window.__fb.addDoc(window.__fb.collection(window.__db,"gestores"),{token,cargo:user||"Gestor",ts:Date.now()});}
+                    }
+                  } else {setNotifStatus("denied");}
+                }catch(e){console.log(e);}
+              }}>
+                🔔 Ativar alertas neste celular
+              </button>
+              <div style={{fontSize:"11px",color:"var(--tx2)",textAlign:"center",marginTop:"8px"}}>O navegador vai pedir permissão para enviar notificações</div>
+            </>}
+            {isGestor&&notifStatus!=="denied"&&<>
+              <div style={{background:"rgba(34,197,94,.1)",border:"1px solid rgba(34,197,94,.3)",borderRadius:"10px",padding:"14px",textAlign:"center",marginBottom:"12px"}}>
+                <div style={{fontSize:"24px",marginBottom:"4px"}}>✅</div>
+                <div style={{fontSize:"13px",fontWeight:700,color:"var(--gr)"}}>Alertas ativados neste celular</div>
+                <div style={{fontSize:"11px",color:"var(--tx2)",marginTop:"4px"}}>Você receberá notificações de gargalos críticos</div>
+              </div>
+              <button onClick={()=>{localStorage.removeItem("pa_gestor");setIsGestor(false);setNotifStatus("idle");}}
+                style={{width:"100%",padding:"10px",borderRadius:"8px",border:"1px solid var(--bd)",background:"var(--sf2)",color:"var(--tx2)",fontSize:"12px",cursor:"pointer",fontFamily:"Space Grotesk,sans-serif"}}>
+                Desativar alertas neste celular
+              </button>
+            </>}
+            {notifStatus==="denied"&&<div style={{background:"rgba(239,68,68,.1)",border:"1px solid rgba(239,68,68,.3)",borderRadius:"10px",padding:"12px",textAlign:"center",marginTop:"8px"}}>
+              <div style={{fontSize:"12px",color:"#fca5a5",fontWeight:600}}>⚠️ Permissão negada</div>
+              <div style={{fontSize:"11px",color:"var(--tx2)",marginTop:"4px"}}>Ative nas configurações do navegador para este site</div>
+            </div>}
+          </div>
+          <div className="card">
+            <div className="ct">Como funciona</div>
+            <div style={{fontSize:"12px",color:"var(--tx2)",lineHeight:1.8}}>
+              • Cada gestor ativa os alertas no <strong style={{color:"var(--tx)"}}>próprio celular</strong><br/>
+              • Quando alguém registrar um crítico, uma notificação aparece na tela<br/>
+              • Funciona mesmo com o app fechado<br/>
+              • Você e a Dra. Natália precisam cada um ativar no próprio celular
+            </div>
+          </div>
+        </>}
+
       </div>
     </div>
   </>);
